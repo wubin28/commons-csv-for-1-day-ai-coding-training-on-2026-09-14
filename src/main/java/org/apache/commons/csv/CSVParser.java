@@ -36,12 +36,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.TreeMap;
@@ -651,11 +653,47 @@ public final class CSVParser implements Iterable<CSVRecord>, Closeable {
                 }
             }
         }
-        if (format.getRequiredHeaders().length > 0) {
-            throw new UnsupportedOperationException("requiredHeaders validation is not implemented yet");
-        }
+        checkRequiredHeaders(headerNames);
         // Make header names Collection immutable
         return new Headers(headerMap, headerNames == null ? Collections.emptyList() : Collections.unmodifiableList(headerNames));
+    }
+
+    /**
+     * Verifies that every header name declared through {@link CSVFormat.Builder#setRequiredHeaders(String...)} is present in the parsed header record.
+     *
+     * <p>
+     * Leading and trailing blanks are ignored on both sides of the comparison; case is significant. Headers present in the input but not declared are allowed.
+     * </p>
+     *
+     * @param headerNames the header names read from the input, may be null when the format defines no header.
+     * @throws MissingRequiredHeadersException if any declared header name is absent.
+     */
+    private void checkRequiredHeaders(final List<String> headerNames) throws MissingRequiredHeadersException {
+        final String[] required = format.getRequiredHeaders();
+        if (required.length == 0) {
+            return;
+        }
+        final Set<String> present = new HashSet<>();
+        if (headerNames != null) {
+            for (final String name : headerNames) {
+                if (name != null) {
+                    present.add(name.trim());
+                }
+            }
+        }
+        final List<String> missing = new ArrayList<>();
+        for (final String name : required) {
+            if (name == null) {
+                continue;
+            }
+            final String declared = name.trim();
+            if (!declared.isEmpty() && !present.contains(declared)) {
+                missing.add(declared);
+            }
+        }
+        if (!missing.isEmpty()) {
+            throw new MissingRequiredHeadersException(missing);
+        }
     }
 
     /**
