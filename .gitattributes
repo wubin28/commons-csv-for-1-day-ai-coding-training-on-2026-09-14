@@ -14,3 +14,7 @@
 #   limitations under the License.
 
 * text=auto
+
+# Approved Scenarios fixtures are compared byte-for-byte; keep them LF on every platform.
+*.approved.md text eol=lf
+*.received.md text eol=lf

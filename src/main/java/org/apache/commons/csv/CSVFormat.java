@@ -257,6 +257,8 @@ public final class CSVFormat implements Serializable {
 
         private String quotedNullString;
 
+        private String[] requiredHeaders;
+
         private QuoteMode quoteMode;
 
         private String recordSeparator;
@@ -296,6 +298,7 @@ public final class CSVFormat implements Serializable {
             this.quoteCharacter = csvFormat.quoteCharacter;
             this.quoteMode = csvFormat.quoteMode;
             this.quotedNullString = csvFormat.quotedNullString;
+            this.requiredHeaders = csvFormat.requiredHeaders;
             this.recordSeparator = csvFormat.recordSeparator;
             this.skipHeaderRecord = csvFormat.skipHeaderRecord;
             this.trailingData = csvFormat.trailingData;
@@ -817,6 +820,28 @@ public final class CSVFormat implements Serializable {
          */
         public Builder setQuoteMode(final QuoteMode quoteMode) {
             this.quoteMode = quoteMode;
+            return this;
+        }
+
+        /**
+         * Sets the header names that the parsed input must contain.
+         *
+         * <p>
+         * When set, {@link CSVParser} validates the header record while initializing and throws {@link MissingRequiredHeadersException} if any declared name is
+         * absent, before producing a single {@link CSVRecord}. Leading and trailing blanks are ignored on both sides of the comparison; case is significant.
+         * Additional headers present in the input but not declared here are allowed.
+         * </p>
+         *
+         * <p>
+         * The default is empty, which disables the check and leaves parsing behavior unchanged.
+         * </p>
+         *
+         * @param requiredHeaders the header names the input must contain.
+         * @return This instance.
+         * @since 1.15.0
+         */
+        public Builder setRequiredHeaders(final String... requiredHeaders) {
+            this.requiredHeaders = CSVFormat.clone(requiredHeaders);
             return this;
         }
 
@@ -1571,6 +1596,9 @@ public final class CSVFormat implements Serializable {
     /** Array of header comment lines. */
     private final String[] headerComments;
 
+    /** Header names the parsed input must contain; empty disables the check. */
+    private final String[] requiredHeaders;
+
     /** Whether empty lines between records are ignored when parsing input. */
     private final boolean ignoreEmptyLines;
 
@@ -1622,6 +1650,7 @@ public final class CSVFormat implements Serializable {
         this.escapeCharacter = builder.escapeCharacter;
         this.headerComments = builder.headerComments;
         this.headers = builder.headers;
+        this.requiredHeaders = builder.requiredHeaders;
         this.ignoreEmptyLines = builder.ignoreEmptyLines;
         this.ignoreHeaderCase = builder.ignoreHeaderCase;
         this.ignoreSurroundingSpaces = builder.ignoreSurroundingSpaces;
@@ -1689,6 +1718,7 @@ public final class CSVFormat implements Serializable {
                 Objects.equals(commentMarker, other.commentMarker) && Objects.equals(delimiter, other.delimiter) &&
                 duplicateHeaderMode == other.duplicateHeaderMode && Objects.equals(escapeCharacter, other.escapeCharacter) &&
                 Arrays.equals(headerComments, other.headerComments) && Arrays.equals(headers, other.headers) &&
+                Arrays.equals(requiredHeaders, other.requiredHeaders) &&
                 ignoreEmptyLines == other.ignoreEmptyLines && ignoreHeaderCase == other.ignoreHeaderCase &&
                 ignoreSurroundingSpaces == other.ignoreSurroundingSpaces && lenientEof == other.lenientEof &&
                 Objects.equals(nullString, other.nullString) && Objects.equals(quoteCharacter, other.quoteCharacter) &&
@@ -1846,6 +1876,16 @@ public final class CSVFormat implements Serializable {
      */
     public Character getEscapeCharacter() {
         return escapeCharacter;
+    }
+
+    /**
+     * Gets a copy of the header names the parsed input must contain.
+     *
+     * @return a copy of the required header array; the empty array when the check is disabled.
+     * @since 1.15.0
+     */
+    public String[] getRequiredHeaders() {
+        return requiredHeaders != null ? requiredHeaders.clone() : Constants.EMPTY_STRING_ARRAY;
     }
 
     /**
@@ -2029,6 +2069,7 @@ public final class CSVFormat implements Serializable {
         int result = 1;
         result = prime * result + Arrays.hashCode(headerComments);
         result = prime * result + Arrays.hashCode(headers);
+        result = prime * result + Arrays.hashCode(requiredHeaders);
         return prime * result + Objects.hash(allowMissingColumnNames, autoFlush, commentMarker, delimiter, duplicateHeaderMode, escapeCharacter,
                 ignoreEmptyLines, ignoreHeaderCase, ignoreSurroundingSpaces, lenientEof, nullString, quoteCharacter, quoteMode, quotedNullString,
                 recordSeparator, skipHeaderRecord, trailingData, trailingDelimiter, trim);

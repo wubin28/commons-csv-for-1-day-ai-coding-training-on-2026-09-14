@@ -651,6 +651,9 @@ public final class CSVParser implements Iterable<CSVRecord>, Closeable {
                 }
             }
         }
+        if (format.getRequiredHeaders().length > 0) {
+            throw new UnsupportedOperationException("requiredHeaders validation is not implemented yet");
+        }
         // Make header names Collection immutable
         return new Headers(headerMap, headerNames == null ? Collections.emptyList() : Collections.unmodifiableList(headerNames));
     }
